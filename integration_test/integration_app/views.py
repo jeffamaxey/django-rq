@@ -12,5 +12,5 @@ def home(request):
         django_rq.enqueue(add_mymodel, request.POST["name"])
         return HttpResponse("Enqueued")
     names = [m.name for m in MyModel.objects.order_by("name")]
-    return HttpResponse("Entries: {}".format(",".join(names)))
+    return HttpResponse(f'Entries: {",".join(names)}')
         

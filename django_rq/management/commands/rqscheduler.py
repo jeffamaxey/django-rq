@@ -34,8 +34,7 @@ class Command(BaseCommand):
             parser.add_argument('args', nargs='*')
 
     def handle(self, *args, **options):
-        pid = options.get('pid')
-        if pid:
+        if pid := options.get('pid'):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 

@@ -54,11 +54,11 @@ def jobs(request, queue_index):
     queue_index = int(queue_index)
     queue = get_queue_by_index(queue_index)
 
-    items_per_page = 100
     num_jobs = queue.count
     page = int(request.GET.get('page', 1))
 
     if num_jobs > 0:
+        items_per_page = 100
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
@@ -88,12 +88,12 @@ def finished_jobs(request, queue_index):
 
     registry = FinishedJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
 
     if num_jobs > 0:
+        items_per_page = 100
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
@@ -124,12 +124,12 @@ def failed_jobs(request, queue_index):
 
     registry = FailedJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
 
     if num_jobs > 0:
+        items_per_page = 100
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
@@ -160,12 +160,12 @@ def scheduled_jobs(request, queue_index):
 
     registry = ScheduledJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
 
     if num_jobs > 0:
+        items_per_page = 100
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
@@ -199,12 +199,12 @@ def started_jobs(request, queue_index):
 
     registry = StartedJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
 
     if num_jobs > 0:
+        items_per_page = 100
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
@@ -277,12 +277,12 @@ def deferred_jobs(request, queue_index):
 
     registry = DeferredJobRegistry(queue.name, queue.connection)
 
-    items_per_page = 100
     num_jobs = len(registry)
     page = int(request.GET.get('page', 1))
     jobs = []
 
     if num_jobs > 0:
+        items_per_page = 100
         last_page = int(ceil(num_jobs / items_per_page))
         page_range = range(1, last_page + 1)
         offset = items_per_page * (page - 1)
@@ -318,7 +318,7 @@ def job_detail(request, queue_index, job_id):
     try:
         job = Job.fetch(job_id, connection=queue.connection)
     except NoSuchJobError:
-        raise Http404("Couldn't find job with this ID: %s" % job_id)
+        raise Http404(f"Couldn't find job with this ID: {job_id}")
 
     try:
         job.func_name
@@ -348,7 +348,7 @@ def delete_job(request, queue_index, job_id):
         # Remove job id from queue and delete the actual job
         queue.connection.lrem(queue.key, 0, job.id)
         job.delete()
-        messages.info(request, 'You have successfully deleted %s' % job.id)
+        messages.info(request, f'You have successfully deleted {job.id}')
         return redirect('rq_jobs', queue_index)
 
     context_data = {
@@ -369,7 +369,7 @@ def requeue_job_view(request, queue_index, job_id):
 
     if request.method == 'POST':
         requeue_job(job_id, connection=queue.connection)
-        messages.info(request, 'You have successfully requeued %s' % job.id)
+        messages.info(request, f'You have successfully requeued {job.id}')
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {
@@ -390,7 +390,7 @@ def clear_queue(request, queue_index):
     if request.method == 'POST':
         try:
             queue.empty()
-            messages.info(request, 'You have successfully cleared the queue %s' % queue.name)
+            messages.info(request, f'You have successfully cleared the queue {queue.name}')
         except ResponseError as e:
             if 'EVALSHA' in e.message:
                 messages.error(request, 'This action is not supported on Redis versions < 2.6.0, please use the bulk delete command instead')
@@ -444,18 +444,20 @@ def confirm_action(request, queue_index):
     queue = get_queue_by_index(queue_index)
     next_url = request.META.get('HTTP_REFERER') or reverse('rq_jobs', args=[queue_index])
 
-    if request.method == 'POST' and request.POST.get('action', False):
-        # confirm action
-        if request.POST.get('_selected_action', False):
-            context_data = {
-                **admin.site.each_context(request),
-                'queue_index': queue_index,
-                'action': request.POST['action'],
-                'job_ids': request.POST.getlist('_selected_action'),
-                'queue': queue,
-                'next_url': next_url,
-            }
-            return render(request, 'django_rq/confirm_action.html', context_data)
+    if (
+        request.method == 'POST'
+        and request.POST.get('action', False)
+        and request.POST.get('_selected_action', False)
+    ):
+        context_data = {
+            **admin.site.each_context(request),
+            'queue_index': queue_index,
+            'action': request.POST['action'],
+            'job_ids': request.POST.getlist('_selected_action'),
+            'queue': queue,
+            'next_url': next_url,
+        }
+        return render(request, 'django_rq/confirm_action.html', context_data)
 
     return redirect(next_url)
 
@@ -467,22 +469,24 @@ def actions(request, queue_index):
     queue = get_queue_by_index(queue_index)
     next_url = request.POST.get('next_url') or reverse('rq_jobs', args=[queue_index])
 
-    if request.method == 'POST' and request.POST.get('action', False):
-        # do confirmed action
-        if request.POST.get('job_ids', False):
-            job_ids = request.POST.getlist('job_ids')
+    if (
+        request.method == 'POST'
+        and request.POST.get('action', False)
+        and request.POST.get('job_ids', False)
+    ):
+        job_ids = request.POST.getlist('job_ids')
 
-            if request.POST['action'] == 'delete':
-                for job_id in job_ids:
-                    job = Job.fetch(job_id, connection=queue.connection)
-                    # Remove job id from queue and delete the actual job
-                    queue.connection.lrem(queue.key, 0, job.id)
-                    job.delete()
-                messages.info(request, 'You have successfully deleted %s jobs!' % len(job_ids))
-            elif request.POST['action'] == 'requeue':
-                for job_id in job_ids:
-                    requeue_job(job_id, connection=queue.connection)
-                messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
+        if request.POST['action'] == 'delete':
+            for job_id in job_ids:
+                job = Job.fetch(job_id, connection=queue.connection)
+                # Remove job id from queue and delete the actual job
+                queue.connection.lrem(queue.key, 0, job.id)
+                job.delete()
+            messages.info(request, f'You have successfully deleted {len(job_ids)} jobs!')
+        elif request.POST['action'] == 'requeue':
+            for job_id in job_ids:
+                requeue_job(job_id, connection=queue.connection)
+            messages.info(request, 'You have successfully requeued %d  jobs!' % len(job_ids))
 
     return redirect(next_url)
 
@@ -510,7 +514,7 @@ def enqueue_job(request, queue_index, job_id):
             registry = ScheduledJobRegistry(queue.name, queue.connection)
             registry.remove(job)
 
-        messages.info(request, 'You have successfully enqueued %s' % job.id)
+        messages.info(request, f'You have successfully enqueued {job.id}')
         return redirect('rq_job_detail', queue_index, job_id)
 
     context_data = {

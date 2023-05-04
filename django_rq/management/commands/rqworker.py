@@ -87,8 +87,7 @@ class Command(BaseCommand):
                                 help='The queues to work on, separated by space')
 
     def handle(self, *args, **options):
-        pid = options.get('pid')
-        if pid:
+        if pid := options.get('pid'):
             with open(os.path.expanduser(pid), "w") as fp:
                 fp.write(str(os.getpid()))
 
@@ -102,8 +101,7 @@ class Command(BaseCommand):
             level = 'INFO'
         setup_loghandlers(level)
 
-        sentry_dsn = options.pop('sentry_dsn')
-        if sentry_dsn:
+        if sentry_dsn := options.pop('sentry_dsn'):
             try:
                 configure_sentry(sentry_dsn, **options)
             except ImportError:

@@ -28,8 +28,8 @@ class Command(BaseCommand):
         parameters given with the rest of the argument list.
         """
         verbosity = int(options.get('verbosity', 1))
-        timeout = options.get('timeout')
-        queue = get_queue(options.get('queue'))
-        job = queue.enqueue_call(args[0], args=args[1:], timeout=timeout)
         if verbosity:
-            print('Job %s created' % job.id)
+            timeout = options.get('timeout')
+            queue = get_queue(options.get('queue'))
+            job = queue.enqueue_call(args[0], args=args[1:], timeout=timeout)
+            print(f'Job {job.id} created')

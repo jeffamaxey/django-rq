@@ -37,7 +37,5 @@ def job(func_or_queue, connection=None, *args, **kwargs):
         kwargs.setdefault('result_ttl', default_result_ttl)
 
     decorator = _rq_job(queue, connection=connection, *args, **kwargs)
-    if func:
-        return decorator(func)
-    return decorator
+    return decorator(func) if func else decorator
 
